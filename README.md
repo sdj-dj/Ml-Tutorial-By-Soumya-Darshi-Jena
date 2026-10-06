@@ -1243,6 +1243,307 @@ Production AI
 ```
 
 This project is intended as a learning foundation for building more advanced AI systems.
+#EXAMPLE:
+```python
+import numpy as np
+import pandas as pd
+
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score
+)
+
+import joblib
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+
+data = {
+    "study_hours": [
+        1, 2, 2, 3, 3,
+        4, 4, 5, 5, 6,
+        6, 7, 7, 8, 8,
+        9, 9, 10, 10, 11
+    ],
+
+    "attendance": [
+        50, 55, 60, 62, 65,
+        68, 70, 72, 75, 78,
+        80, 82, 84, 86, 88,
+        90, 92, 94, 96, 98
+    ],
+
+    "previous_score": [
+        40, 45, 48, 50, 53,
+        55, 58, 60, 63, 65,
+        68, 70, 72, 75, 78,
+        80, 83, 86, 90, 92
+    ],
+
+    "final_score": [
+        42, 47, 50, 53, 55,
+        58, 61, 63, 66, 69,
+        71, 74, 77, 80, 82,
+        85, 87, 90, 94, 96
+    ]
+}
+
+df = pd.DataFrame(data)
+
+print("\n==============================")
+print("RAW DATA")
+print("==============================")
+
+print(df)
+
+print("\n==============================")
+print("DATA INFORMATION")
+print("==============================")
+
+print(df.info())
+
+print("\nSTATISTICS:")
+print(df.describe())
+
+print("\n==============================")
+print("MISSING VALUES")
+print("==============================")
+
+print(df.isnull().sum())
+
+df = df.drop_duplicates()
+
+sns.scatterplot(
+    data=df,
+    x="study_hours",
+    y="final_score"
+)
+
+plt.title("Study Hours vs Final Score")
+plt.xlabel("Study Hours")
+plt.ylabel("Final Score")
+
+plt.show()
+
+sns.histplot(data=df, x="attendance", kde=True)
+
+plt.title("Attendance Distribution")
+plt.xlabel("Attendance")
+plt.ylabel("Frequency")
+
+plt.show()
+print("\n==============================")
+print("CORRELATION")
+print("==============================")
+
+print(df.corr())
+
+
+sns.heatmap(
+    df.corr(),
+    annot=True
+)
+
+plt.title("Feature Correlation")
+
+plt.show()
+
+X = df[
+    [
+        "study_hours",
+        "attendance",
+        "previous_score"
+    ]
+]
+
+y = df["final_score"]
+
+
+print("\nFEATURES:")
+print(X)
+
+print("\nTARGET:")
+print(y)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+
+print("\n==============================")
+print("DATA SPLIT")
+print("==============================")
+
+print("Training samples:", len(X_train))
+print("Testing samples :", len(X_test))
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+print("\n==============================")
+print("SCIKIT-LEARN MODEL")
+print("==============================")
+
+
+model = LinearRegression()
+model.fit(X_train_scaled, y_train)
+sklearn_predictions = model.predict(X_test_scaled)
+
+print("\nPredictions:")
+print(sklearn_predictions)
+
+mae = mean_absolute_error(y_test, sklearn_predictions)
+mse = mean_squared_error(y_test, sklearn_predictions)
+rmse = np.sqrt(mse)
+r2 = r2_score(y_test,sklearn_predictions)
+
+print("\n==============================")
+print("SCIKIT-LEARN EVALUATION")
+print("==============================")
+
+print("MAE :", mae)
+print("MSE :", mse)
+print("RMSE:", rmse)
+print("R2  :", r2)
+
+joblib.dump(model,"student_model.pkl")
+joblib.dump(scaler,"student_scaler.pkl")
+
+print("\nScikit-learn model saved.")
+
+loaded_model = joblib.load("student_model.pkl")
+loaded_scaler = joblib.load("student_scaler.pkl")
+
+new_student = pd.DataFrame([[8, 90, 80]], columns=["study_hours","attendance", "previous_score"])
+new_student_scaled = loaded_scaler.transform(new_student)
+prediction = loaded_model.predict(new_student_scaled)
+
+print("\n==============================")
+print("NEW STUDENT PREDICTION")
+print("==============================")
+
+print("Predicted final score:",prediction[0])
+
+X_train_tensor = torch.tensor(X_train_scaled, dtype=torch.float32)
+y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32).reshape(-1, 1)
+X_test_tensor = torch.tensor(X_test_scaled, dtype=torch.float32)
+y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32).reshape(-1, 1)
+
+class StudentNeuralNetwork(nn.Module):
+
+    def __init__(self):
+      super().__init__()
+      self.network = nn.Sequential(
+            nn.Linear(3, 32),
+            nn.ReLU(),
+            nn.Linear(32, 16),
+            nn.ReLU(),
+            nn.Linear(16, 1)
+      )
+
+    def forward(self, x):
+      return self.network(x)
+
+nn_model = StudentNeuralNetwork()
+print("\n==============================")
+print("PYTORCH MODEL")
+print("==============================")
+print(nn_model)
+loss_function = nn.MSELoss()
+optimizer = optim.Adam(
+    nn_model.parameters(),
+    lr=0.001
+)
+epochs = 1000
+print("\n==============================")
+print("PYTORCH TRAINING")
+print("==============================")
+for epoch in range(epochs):
+    predictions = nn_model(
+        X_train_tensor
+    )
+    loss = loss_function(
+        predictions,
+        y_train_tensor
+    )
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    if (epoch + 1) % 100 == 0:
+
+        print(
+            f"Epoch {epoch + 1}/{epochs} "
+            f"Loss: {loss.item():.4f}"
+        )
+nn_model.eval()
+with torch.no_grad():
+
+    test_predictions = nn_model(
+        X_test_tensor
+    )
+test_predictions_numpy = (
+    test_predictions.numpy()
+)
+pytorch_mae = mean_absolute_error(
+    y_test,
+    test_predictions_numpy
+)
+pytorch_mse = mean_squared_error(
+    y_test,
+    test_predictions_numpy
+)
+pytorch_rmse = np.sqrt(
+    pytorch_mse
+)
+pytorch_r2 = r2_score(
+    y_test,
+    test_predictions_numpy
+)
+print("\n==============================")
+print("PYTORCH EVALUATION")
+print("==============================")
+print("MAE :", pytorch_mae)
+print("MSE :", pytorch_mse)
+print("RMSE:", pytorch_rmse)
+print("R2  :", pytorch_r2)
+torch.save(
+    nn_model.state_dict(),
+    "student_neural_network.pth"
+)
+print("\nPyTorch model saved.")
+loaded_nn_model = StudentNeuralNetwork()
+loaded_nn_model.load_state_dict(
+    torch.load(
+        "student_neural_network.pth",
+        weights_only=True
+    )
+)
+loaded_nn_model.eval()
+new_student_tensor = torch.tensor(
+    new_student_scaled,
+    dtype=torch.float32
+)
+with torch.no_grad():
+
+    nn_prediction = loaded_nn_model(
+        new_student_tensor
+    )
+print("\n==============================")
+print("PYTORCH NEW PREDICTION")
+print("==============================")
+print(
+    "Predicted score:",
+    nn_prediction.item()
+)
+
+```
 
 #OUTPUT FOR THIS PROGRAM:
 
@@ -1312,7 +1613,14 @@ attendance        0
 previous_score    0
 final_score       0
 dtype: int64
-<img width="562" height="455" alt="image" src="https://github.com/user-attachments/assets/dc4f735f-3f59-4eee-8daa-8c817a7f71a3" />
+```
+
+<img width="562" height="455" alt="image" src="https://github.com/user-attachments/assets/3248c9ca-b1b7-48b0-9014-45e19c96df5f" />
+
+<img width="563" height="455" alt="image" src="https://github.com/user-attachments/assets/ad83b4c8-4744-4915-b336-b9a6c26093bc" />
+
+
+```text
 ==============================
 CORRELATION
 ==============================
@@ -1321,7 +1629,10 @@ study_hours        1.000000    0.990401        0.994846     0.996309
 attendance         0.990401    1.000000        0.993733     0.995377
 previous_score     0.994846    0.993733        1.000000     0.999308
 final_score        0.996309    0.995377        0.999308     1.000000
-<img width="533" height="435" alt="image" src="https://github.com/user-attachments/assets/28fe5aae-1f12-4a2a-88ce-cfbe7d799feb" />
+```
+<img width="533" height="435" alt="image" src="https://github.com/user-attachments/assets/8db2072a-2d23-4c1f-9c2e-c13527075d87" />
+
+```text
 FEATURES:
     study_hours  attendance  previous_score
 0             1          50              40
